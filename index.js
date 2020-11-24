@@ -88,6 +88,22 @@ const Form_sendTopicMessageAndWait_REPORTER = {
   "zh-cn": "广播[content]并等待",
 }
 
+const FormEnableMissionPads = {
+    en: "[action] mission pads",
+    "zh-cn": "[action] 检测挑战卡",
+  }
+
+const FormGOMid = {
+    en: "Fly to x[x] y[y] z[z] relative to the mission pad [mid] with [speed]",
+    "zh-cn": "以[speed]速度飞往挑战卡[mid]位置x[x]y[y]z[z]",
+  }
+
+const  FormGetMid = {
+    en: "find mission pad [mid]?",
+    "zh-cn": "发现挑战卡[mid]?",
+  }
+  
+
 class AdapterClient {
     onAdapterPluginMessage(msg) {
         this.node_id = msg.message.payload.node_id;
@@ -424,6 +440,59 @@ class Scratch3TelloBlocks {
                     },
                 },
                 {
+                    opcode: "enable_mission_pads",
+                    blockType: BlockType.COMMAND,
+                    text: FormEnableMissionPads[the_locale],
+                    arguments: {
+                        action: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'enable',
+                            menu: 'mission_pads_action'
+                        },
+                    },
+                },
+                {
+                    opcode: "get_mission_pad_id",
+                    blockType: BlockType.BOOLEAN,
+                    text: FormGetMid[the_locale],
+                    arguments: {
+                        mid: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1,
+                            // menu: 'mission_pad_id'
+                        },
+                    },
+                },
+                //
+                {
+                    opcode: "go_xyz_speed_mid",
+                    blockType: BlockType.COMMAND,
+                    text: FormGOMid[the_locale],
+                    arguments: {
+                        x: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 0,
+                        },
+                        y: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 0,
+                        },
+                        z: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 50,
+                        },
+                        speed: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 50,
+                        },
+                        mid: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1,
+                        }
+                    },
+                },
+                //
+                {
                   opcode: "broadcastTopicMessageAndWait",
                   blockType: BlockType.COMMAND,
                   text: Form_sendTopicMessageAndWait[the_locale],
@@ -640,7 +709,10 @@ class Scratch3TelloBlocks {
                     acceptReporters: true,
                     items: ["start", "stop"],
                 },
-
+                mission_pads_action: {
+                    items: ["enable", "disable"],
+                },
+                
             },
         };
     }
@@ -729,12 +801,52 @@ class Scratch3TelloBlocks {
             content
         );
     }
+
+    enable_mission_pads(args) {
+        const action = args.action;
+        const _map = {
+            "enable": `tello.enable_mission_pads()`,
+            "disable": `tello.disable_mission_pads()`
+        }
+        const content = _map[action];
+        return this.client.emit_with_messageid(
+            NODE_ID,
+            content
+        );
+    }
+
+    get_mission_pad_id(args){
+        const mid = args.mid; //string
+        const content = `tello.get_mission_pad_id()`;
+        return this.client.emit_with_messageid(
+            NODE_ID,
+            content
+        ).then(data => {
+            return (data===mid)
+          });
+    }
+
+    async go_xyz_speed_mid(args) {
+        /*
+        go_xyz_speed_mid(self, x: int, y: int, z: int, speed: int, mid: int):
+        */
+        const x = parseFloat(args.x);
+        const y = parseFloat(args.y);
+        const z = parseFloat(args.z);
+        const speed = parseFloat(args.speed);
+        const mid = parseFloat(args.mid);
+        
+        const content = `tello.go_xyz_speed_mid(${x},${y},${z},${speed},${mid})`;
+        return this.client.emit_with_messageid(
+            NODE_ID,
+            content
+        );
+    }
     // broadcast
     broadcastTopicMessageAndWait(args) {
       const node_id = args.node_id;
       const content = args.content;
-      this.client.emit_with_messageid(node_id, content);
-      return;
+      return this.client.emit_with_messageid(node_id, content);
   }
 
     getspeed() {
@@ -822,13 +934,15 @@ class Scratch3TelloBlocks {
     }
 
     broadcastTopicMessageAndWait(args) {
+      // topic服务于消息功能， node_id承载业务逻辑(extension)
       const content = args.content;
-      return this.eim_client.adapter_base_client.emit_with_messageid(NODE_ID, content);
+      return this.client.adapter_base_client.emit_with_messageid(NODE_ID, content);
   }
 
   broadcastTopicMessageAndWait_REPORTER(args) {
+      // topic服务于消息功能， node_id承载业务逻辑(extension)
       const content = args.content;
-      return this.eim_client.adapter_base_client.emit_with_messageid(NODE_ID, content);
+      return this.client.adapter_base_client.emit_with_messageid(NODE_ID, content);
   }
 
 }
