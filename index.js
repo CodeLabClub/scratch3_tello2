@@ -135,8 +135,8 @@ class AdapterClient {
         );
     }
 
-    emit_with_messageid(NODE_ID, content, timeout=5000){
-      return this.adapter_base_client.emit_with_messageid(NODE_ID,content,timeout)
+    emit_with_messageid(NODE_ID, content){
+        return this.adapter_base_client.emit_with_messageid(NODE_ID,content,this.emit_timeout)
     }
 }
 
@@ -930,7 +930,7 @@ class Scratch3TelloBlocks {
 
     set_emit_timeout(args) {
         const timeout = parseFloat(args.emit_timeout) * 1000;
-        this.emit_timeout = timeout;
+        this.client.emit_timeout = timeout;
     }
 
     broadcastTopicMessageAndWait(args) {
